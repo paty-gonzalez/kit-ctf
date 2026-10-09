@@ -1,0 +1,194 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Kit CTF del Navegador</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: consola de referencia — buscador + chips de categoría arriba, tarjetas "qué ves → herramienta" abajo.
+   Mundo visual: terminal CTF. Verde consola + ámbar. Oscuro por defecto. */
+:root{
+  --bg:#0c0e09; --surface:#14170f; --panel:#191d12; --ink:#e8ead9; --muted:#969c84;
+  --accent:#5fd38a; --accent-2:#e8a74b; --line:#282d1c;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 12px 28px rgba(0,0,0,.45);
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#f3f5ee; --surface:#ffffff; --panel:#eaece2; --ink:#1a1e14; --muted:#5e6552;
+  --accent:#1c8f4e; --accent-2:#a9680c; --line:#d6d9cb;
+  --shadow:0 1px 0 rgba(20,22,10,.03),0 12px 28px rgba(40,50,20,.08);
+  color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#f3f5ee; --surface:#ffffff; --panel:#eaece2; --ink:#1a1e14; --muted:#5e6552;
+  --accent:#1c8f4e; --accent-2:#a9680c; --line:#d6d9cb;
+  --shadow:0 1px 0 rgba(20,22,10,.03),0 12px 28px rgba(40,50,20,.08);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);line-height:1.55}
+.wrap{max-width:900px;margin:0 auto;padding-inline:18px;padding-block:0 60px}
+a{color:var(--accent)}
+h1{font-family:var(--f-mono);font-weight:700;margin:0;letter-spacing:-.01em}
+
+.head{padding-block:30px 10px}
+.prompt{font-family:var(--f-mono);font-size:.74rem;color:var(--accent);letter-spacing:.06em;margin-bottom:8px}
+.head h1{font-size:clamp(1.7rem,5vw,2.5rem)}
+.head h1 .c{color:var(--accent)}
+.sub{color:var(--muted);font-size:1rem;margin-top:10px;max-width:62ch}
+.goldrule{display:flex;gap:10px;align-items:flex-start;background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 36%,transparent);border-radius:11px;padding:12px 14px;margin-top:16px;font-size:.92rem}
+.goldrule b{color:var(--accent)}
+
+.controls{position:sticky;top:0;z-index:10;background:var(--bg);padding-block:12px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+#search{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+  color:var(--ink);font-family:var(--f-mono);font-size:1rem}
+#search:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{font-family:var(--f-mono);font-size:.76rem;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:99px;padding:6px 12px;cursor:pointer}
+.chip.on{background:var(--accent);color:#05210f;border-color:var(--accent);font-weight:700}
+.chip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+.grid{display:grid;gap:12px;margin-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:15px 16px}
+.card .cat{font-family:var(--f-mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2);margin-bottom:7px}
+.see{font-size:1.02rem;font-weight:600;margin-bottom:4px}
+.see b{color:var(--accent)}
+.do{font-size:.92rem;color:var(--muted);margin-bottom:10px}
+.do code{font-family:var(--f-mono);font-size:.85em;background:var(--panel);padding:1px 6px;border-radius:5px;color:var(--ink);word-break:break-all}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tool{font-family:var(--f-mono);font-size:.78rem;text-decoration:none;border:1px solid var(--accent);color:var(--accent);
+  border-radius:8px;padding:5px 11px;display:inline-flex;align-items:center;gap:5px}
+.tool:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.tool.amber{border-color:var(--accent-2);color:var(--accent-2)}
+.tool.amber:hover{background:color-mix(in srgb,var(--accent-2) 14%,transparent)}
+.empty{color:var(--muted);font-family:var(--f-mono);font-size:.9rem;padding:24px 4px;text-align:center}
+
+.foot{margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
+.foot h3{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.foot .tools{margin-top:6px}
+.themebtn{position:fixed;top:12px;right:14px;z-index:20;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:8px;width:34px;height:30px;cursor:pointer}
+.note{color:var(--muted);font-size:.8rem;text-align:center;margin-top:22px;font-family:var(--f-mono)}
+</style>
+
+<button class="themebtn" id="theme" aria-label="Cambiar tema">◐</button>
+
+<div class="wrap">
+  <header class="head">
+    <div class="prompt">~/ctf $ ./kit --navegador</div>
+    <h1>Kit CTF del <span class="c">Navegador</span></h1>
+    <p class="sub">Tu mapa de reflejos para los retos: <b>¿qué ves? → qué herramienta → qué hacer</b>. Todo corre en el navegador, sin instalar nada. Búscalo o filtra por categoría.</p>
+    <div class="goldrule">🥢 <div><b>Regla de oro:</b> siempre empieza por lo barato — <code>strings</code>, EXIF y <i>Magic</i> — antes de meterte a lo complicado. El 70% de las pistas salen ahí.</div></div>
+  </header>
+
+  <div class="controls">
+    <input type="text" id="search" placeholder="Escribe lo que ves… (ej: 'termina en =', 'imagen', 'hash')" autocomplete="off" aria-label="Buscar">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>nada coincide — prueba otra palabra o quita filtros</div>
+
+  <div class="foot">
+    <h3>Para practicar (gratis, en el navegador)</h3>
+    <div class="tools">
+      <a class="tool" href="https://picoctf.org" target="_blank" rel="noopener">picoCTF ↗</a>
+      <a class="tool" href="https://overthewire.org/wargames/" target="_blank" rel="noopener">OverTheWire ↗</a>
+      <a class="tool amber" href="https://en.wikipedia.org/wiki/List_of_file_signatures" target="_blank" rel="noopener">Tabla de magic bytes ↗</a>
+    </div>
+  </div>
+  <p class="note">Hacking Ético (Fundamentos) V2261 · úsalo solo sobre retos y material autorizado</p>
+</div>
+
+<script>
+var TOOLS={
+  cyberchef:["CyberChef","https://gchq.github.io/CyberChef/",""],
+  aperisolve:["Aperi'Solve","https://aperisolve.com",""],
+  jimpl:["Jimpl","https://jimpl.com",""],
+  dcode:["dCode","https://www.dcode.fr/cipher-identifier","amber"],
+  crackstation:["CrackStation","https://crackstation.net","amber"]
+};
+var CATS=["Todo","Texto / código","Cifrado clásico","Imágenes & estego","Metadatos","Archivos & firmas","Hashes","Otros"];
+var DATA=[
+ {cat:"Texto / código",see:"Texto que <b>termina en = </b> o solo tiene A–Z a–z 0–9 + /",
+  do:"Es Base64 (codificación, no cifrado). Decodifícalo con <code>From Base64</code>.",tools:["cyberchef"]},
+ {cat:"Texto / código",see:"Puros caracteres <b>0–9 y a–f</b>, en pares",
+  do:"Es hexadecimal. Usa <code>From Hex</code>. Recuerda: cada 2 hex = 1 byte.",tools:["cyberchef"]},
+ {cat:"Texto / código",see:"Muchos <b>%</b> en el texto (ej: %20, %3D)",
+  do:"Es URL encoding. <code>URL Decode</code>.",tools:["cyberchef"]},
+ {cat:"Texto / código",see:"Puros <b>0 y 1</b>",
+  do:"Binario. <code>From Binary</code> (o pásalo a ASCII).",tools:["cyberchef"]},
+ {cat:"Texto / código",see:"<b>No sabes qué es</b> ese churro de texto",
+  do:"Arrástralo a la operación <code>Magic</code>: analiza y te sugiere la receta sola.",tools:["cyberchef"]},
+ {cat:"Cifrado clásico",see:"Texto <b>revuelto pero con pinta de palabras</b> (letras corridas)",
+  do:"Huele a César, Vigenère o sustitución. Identifícalo con el Cipher Identifier y resuélvelo ahí.",tools:["dcode"]},
+ {cat:"Cifrado clásico",see:"Se ve como <b>ROT13</b> (letras desplazadas 13)",
+  do:"<code>ROT13</code> directo, o prueba los 25 desplazamientos con <code>ROT13 Brute Force</code>.",tools:["cyberchef","dcode"]},
+ {cat:"Imágenes & estego",see:"Una <b>imagen sospechosa</b> en un reto",
+  do:"Súbela a Aperi'Solve: corre exiftool + strings + binwalk + zsteg + stegsolve de un solo clic. Empieza siempre aquí.",tools:["aperisolve"]},
+ {cat:"Imágenes & estego",see:"Crees que hay un <b>mensaje escondido en los píxeles</b> (LSB)",
+  do:"Aperi'Solve te muestra los planos de bits (bit planes) y el LSB. Busca texto o un QR escondido en algún plano.",tools:["aperisolve"]},
+ {cat:"Imágenes & estego",see:"Crees que hay <b>texto pegado</b> dentro del archivo",
+  do:"La técnica de <code>strings</code> saca todo el texto legible del archivo. Aperi'Solve o CyberChef.",tools:["aperisolve","cyberchef"]},
+ {cat:"Metadatos",see:"<b>¿Dónde o con qué</b> se tomó esta foto?",
+  do:"Lee el EXIF: GPS y modelo del dispositivo. Jimpl es el más rápido; Aperi'Solve también lo saca.",tools:["jimpl","aperisolve"]},
+ {cat:"Archivos & firmas",see:"<b>¿Qué tipo de archivo es</b> en realidad? (extensión sospechosa)",
+  do:"Mira sus <b>magic bytes</b> con <code>Detect File Type</code>: <code>89 50 4E 47</code>=PNG, <code>25 50 44 46</code>=PDF, <code>50 4B</code>=ZIP. Los bytes no mienten aunque le cambien la extensión.",tools:["cyberchef"]},
+ {cat:"Archivos & firmas",see:"Crees que hay <b>un archivo dentro de otro</b> (ej: un zip pegado a un png)",
+  do:"\"Carving\": Aperi'Solve corre binwalk y lo extrae. En CyberChef, <code>Extract Files</code>.",tools:["aperisolve","cyberchef"]},
+ {cat:"Hashes",see:"Una cadena de <b>32 o 64 caracteres hex</b> (MD5 / SHA)",
+  do:"Es un hash: NO se 'descifra'. Búscalo en tablas: CrackStation lo revierte si es común. Un hash nunca se decodifica, se compara o se busca.",tools:["crackstation"]},
+ {cat:"Otros",see:"Un <b>código QR</b> o de barras",
+  do:"<code>Parse QR Code</code> en CyberChef, o toma foto y que el teléfono lo lea.",tools:["cyberchef"]}
+];
+
+var state={q:"",cat:"Todo"};
+var grid=document.getElementById("grid"),empty=document.getElementById("empty"),chipsEl=document.getElementById("chips");
+
+CATS.forEach(function(c){
+  var b=document.createElement("button");b.className="chip"+(c===state.cat?" on":"");b.textContent=c;b.setAttribute("data-cat",c);
+  chipsEl.appendChild(b);
+});
+chipsEl.addEventListener("click",function(e){
+  var c=e.target.getAttribute("data-cat");if(!c)return;
+  state.cat=c;
+  [].forEach.call(chipsEl.children,function(ch){ch.classList.toggle("on",ch.getAttribute("data-cat")===c)});
+  render();
+});
+document.getElementById("search").addEventListener("input",function(e){state.q=e.target.value.toLowerCase().trim();render();});
+
+function toolLink(key){
+  var t=TOOLS[key];if(!t)return"";
+  return '<a class="tool'+(t[2]?" "+t[2]:"")+'" href="'+t[1]+'" target="_blank" rel="noopener">'+t[0]+' ↗</a>';
+}
+function strip(html){return html.replace(/<[^>]+>/g," ")}
+function render(){
+  grid.innerHTML="";var n=0;
+  DATA.forEach(function(d){
+    if(state.cat!=="Todo"&&d.cat!==state.cat)return;
+    if(state.q){var hay=(strip(d.see)+" "+strip(d.do)+" "+d.cat+" "+d.tools.map(function(k){return TOOLS[k]?TOOLS[k][0]:""}).join(" ")).toLowerCase();
+      if(hay.indexOf(state.q)===-1)return;}
+    n++;
+    var card=document.createElement("div");card.className="card";
+    card.innerHTML='<div class="cat">'+d.cat+'</div><div class="see">'+d.see+'</div><div class="do">'+d.do+'</div>'+
+      '<div class="tools">'+d.tools.map(toolLink).join("")+'</div>';
+    grid.appendChild(card);
+  });
+  empty.hidden=n>0;
+}
+render();
+
+var tb=document.getElementById("theme");
+tb.addEventListener("click",function(){
+  var now=document.documentElement.getAttribute("data-theme");
+  var sysDark=window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var next=now==="dark"?"light":now==="light"?"dark":(sysDark?"light":"dark");
+  document.documentElement.setAttribute("data-theme",next);
+  try{localStorage.setItem("kit-theme",next)}catch(e){}
+});
+try{var th=localStorage.getItem("kit-theme");if(th)document.documentElement.setAttribute("data-theme",th)}catch(e){}
+</script>
+
+</body></html>
